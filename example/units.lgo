@@ -1,0 +1,42 @@
+package main
+
+import "golex"
+import "io"
+import "os"
+
+func (UnitsLex) Lex(yylval *units_SymType) int {
+	for {
+		switch tok := golex.Token(os.Stdin); tok {
+		case "[ \t]+":
+			continue
+		case "×":
+			return '*'
+		case "÷":
+			return '/'
+		case "[¹ⁱ]":
+			yylval.numb = 1
+			return SUP
+		case "[²⁲]":
+			yylval.numb = 2
+			return SUP
+		case "[³⁳]":
+			yylval.numb = 3
+			return SUP
+		case "[0-9.][-+0-9.e]*":
+			f, err := strconf.Atof64(tok.Text)
+			if err != nil {
+				fmt.Printf("error converting %v\n", tok.Text)
+				f = 0
+			}
+			yylval.vval = f
+			return VAL
+		case "[^+\\-*/\\[\\]()^:? \t.|#×÷¹ⁱ²⁲³⁳]+":
+			sym = tok.Text
+			yylval.vvar = lookup(0)
+			return VAR
+		case ".":
+			return tok.Text[0]
+		}
+	}
+}
+		
