@@ -29,6 +29,15 @@ func main() {
 	var input io.Reader
 	var err os.Error
 	var filename string
+
+	{
+		temp := "a⍨c"
+		fmt.Printf("Len: %v\n", len(temp))
+		for i := 0; i < len(temp); i++ {
+			fmt.Printf("%3d: %02x\n", i, temp[i])
+		}
+	}
+	
 	if flag.NArg() > 0 {
 		filename = flag.Arg(0)
 		if input, err = os.Open(flag.Arg(0)); err != nil {
@@ -161,7 +170,8 @@ func (self *ToplevelVisitor) walkStmtList(list []ast.Stmt) {
 					}
 				}
 				for i, pat := range patterns {
-					log.Printf("%d: %v", i, strconv.Quote(pat))
+					log.Printf("%d: (in) %v", i, strconv.Quote(pat))
+					log.Printf("%d: %v", i, strconv.Quote(ParseRegex(pat).StringPrec(0)))
 				}
 			}
 				

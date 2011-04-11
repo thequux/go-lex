@@ -4,6 +4,7 @@ TARG=golex
 DEPS=../dsview
 
 GOFILES=\
-	lex.go
+	lex.go \
+	graph.go
 
 include $(GOROOT)/src/Make.cmd
