@@ -8,12 +8,12 @@ import (
 	"bytes"
 	"log"
 	"tabwriter"
+	"sort"
 	"strconv"
 )
 
 type (
 	NodeId int
-
 
 	NfaNode struct {
 		Nodes map[byte][]NodeId
@@ -24,6 +24,7 @@ type (
 		NewNode() NodeId
 		AddTransition(label byte, from, to NodeId)
 	}
+
 	Nfa interface {
 		Graph
 		AddEpsilon(from, to NodeId)
@@ -35,7 +36,21 @@ type (
 		Accepting map[NodeId]string
 		MaxNode   NodeId
 	}
+	
+	DfaNode map[byte]NodeId
 
+	Dfa interface {
+		findNode (DfaNode) (NodeId, bool)
+		Index (DfaNode) NodeId
+	}
+	
+	dfa struct {
+		Nodes map[NodeId]NodeId
+		Start NodeId
+		Accepting map[NodeId]string
+		MaxNode NodeId
+	}
+	
 	regex interface {
 		AddToGraph(g Nfa, from, to NodeId)
 		StringPrec(prec int) string
@@ -311,4 +326,110 @@ func (g *nfa) ToDot(w io.Writer) {
 	}
 	tw.Flush()
 	fmt.Fprintf(w, "}\n")
+}
+
+func MakeDFA (n Nfa) Dfa {
+	return &dfa{
+	Accepting: map[NodeId]string{},
+	MaxNode: NodeId(-1),
+	}
+}
+
+func MakeDfaNode() *DfaNode {
+	return &make(map[byte]NodeId)
+}
+
+func (d *dfa) NewNode() NodeId {
+	d.MaxNode++
+	d.Nodes[g.MaxNode] = MakeDfaNode()
+	return d.MaxNode
+}
+
+func (d *dfa) AddTransition (label byte, from, to NodeId) {
+	d.Nodes[from][byte] = to
+}
+
+func (d *dfa) Index (sn DfaNode) (nodeId NodeId) {
+	if nodeId, ok := d.findNode (sn); !ok {
+		nodeId = g.NewNode ()
+		d.Nodes[nodeId] = sn
+	}
+	return 
+}
+
+// using map as a reverse lookup
+func (d *dfa) findNode (sn DfaNode) (nodeId NodeId, ok bool) {
+	sorted := sort.Sort(sn.Nodes)
+	ok := true
+	for nodeId, nodes := range d.Nodes {
+		if sorted == nodes {
+			return
+		}
+	}
+	return nil, false
+}
+
+
+// func (g *nfa) EpsilonClojures() {
+// 	panic("wrong fucking language")
+// }
+
+func (g *nfa) EpsilonClosures() (closures map[NodeId][]NodeId) {
+	closures := make(map[NodeId][]NodeId, len(g.Nodes))
+	for i, b := range g.Nodes {
+		closures[b] = append (closures[b], b)
+	}
+	for _, _ = range g.Nodes {
+		for i, nodes := range closures {
+			for j, enodes := range nodes {
+				closures[i] = append (closures[i], enodes)
+			}
+		}
+	}
+	for key, nodes := range closures {
+		closures[key] = unique(nodes)
+	}
+	return 
+}
+
+func (g *nfa) PowerSetConstruction(closures map[NodeId][]NodeId) Dfa {
+	dfa := MakeDFA()
+	for from, closure := range closures {
+		litMap := make(map[byte][]NodeId)
+		// for each literal, find union of transitions
+		for _, node := range closure {
+			for lit, nodes := range node.Nodes {
+				litMap[lit] = append (litMap[lit], nodes)
+			}
+		}
+		for lit, nodes := range litMap {
+			list := unique (nodes)
+			to := g.Index(list)
+			g.AddTransition (lit, from, to)
+		}
+	}
+	return dfa
+}
+
+
+func (n *nfa) ConvertToDFA () (g Dfa) {
+	g = n.PowerSetConstruction(n.EpsilonClosures())
+	
+	for nodeId, nodes := range g.Nodes {
+	Search: for _, n := range nodes {
+			for acc, name := range g.Accepting {
+				if n != acc {
+					continue
+				}
+				dfa.Accepting[nodeId] = append (dfa.Accepting[nodeId], name)
+				if (len(dfa.Accepting[nodeId]) > 1) {
+					log.Printf ("Apparently multiple accepting strings
+					for a single accept node after powerset construction")
+				}
+				break Search
+			}
+		}
+	}
+	g.Start = n.Start
+	return g
 }
