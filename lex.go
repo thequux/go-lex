@@ -169,6 +169,10 @@ func (self *ToplevelVisitor) walkStmtList(list []ast.Stmt) {
 						patterns = append(patterns, str)
 					}
 				}
+				o, _ := os.Create("out.dot")
+				nfa0, _ := MakeNFA(patterns)
+				nfa0.(*nfa).ToDot(o)
+				o.Close()
 				for i, pat := range patterns {
 					log.Printf("%d: (in) %v", i, strconv.Quote(pat))
 					log.Printf("%d: %v", i, strconv.Quote(ParseRegex(pat).StringPrec(0)))
